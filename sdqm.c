@@ -4,6 +4,8 @@
 #include <math.h>
 #include <time.h>
 
+int n_threads;
+
 double randomReal(){
     
     double d, low = -10000.0, high = 1000.0;
@@ -48,8 +50,11 @@ void randomizarMatriz(double **M, int linhas, int colunas){
 
 void elevarElementosAoQuadrado(double **M, int linhas, int colunas){
 
-    for(int i = 0; i < linhas; i++){
-        for(int j = 0; j < colunas; j++){
+    int i, j;
+
+    #pragma omp parallel for shared(M, i) private (j)
+    for(i = 0; i < linhas; i++){
+        for(j = 0; j < colunas; j++){
             M[i][j] = pow(M[i][j], 2);
         }
     }
@@ -71,10 +76,12 @@ void printMatriz(double **M, int linhas, int colunas){
 
 double **subtrairMatrizes(double **M1, double **M2, int linhas, int colunas){
 
+    int i, j;
     double **MR = alocarMatriz(MR, linhas, colunas);
-
-    for(int i = 0; i < linhas; i++){
-        for(int j = 0; j < colunas; j++){
+    
+    #pragma omp parallel for shared(M1, M2, MR, i) private (j)
+    for(i = 0; i < linhas; i++){
+        for(j = 0; j < colunas; j++){
             MR[i][j] = M1[i][j] - M2[i][j];
         }
     }
@@ -87,6 +94,9 @@ double reduzirMatriz(double **M, int linhas, int colunas){
 
     double resultado = 0;
 
+    int i, j;
+    
+    #pragma omp parallel for shared(M, i) private (j) reduction(+:resultado)
     for(int i = 0; i < linhas; i++){
         for(int j = 0; j < colunas; j++){
             resultado += M[i][j];
@@ -99,11 +109,13 @@ double reduzirMatriz(double **M, int linhas, int colunas){
 int main (int argc, char **argv){
 
     srand(time(NULL));
-    clock_t inicio, fim;
-    float tempo_total = 0.0;
+    double inicio, fim;
+    double tempo_total = 0.0;
     double **M1, **M2, **MR, resultado_final;
     int linha = atoi(argv[1]), coluna = atoi(argv[2]); 
-    printf("AAAAAAAAAAAAAAAAAAAAA\n");
+    n_threads = atoi(argv[3]);
+
+    omp_set_num_threads(n_threads);
 
     M1 = alocarMatriz(M1, linha, coluna);
     M2 = alocarMatriz(M2, linha, coluna);
@@ -111,8 +123,9 @@ int main (int argc, char **argv){
     randomizarMatriz(M1, linha, coluna);
     randomizarMatriz(M2, linha, coluna);
 
-    //calculo 
-    inicio = clock();
+    //calculo
+
+    inicio = omp_get_wtime();
 
     elevarElementosAoQuadrado(M1, linha, coluna);
     elevarElementosAoQuadrado(M2, linha, coluna);
@@ -121,9 +134,9 @@ int main (int argc, char **argv){
 
     resultado_final = reduzirMatriz(MR, linha, coluna);
 
-    fim = clock();
+    fim = omp_get_wtime();
 
-    tempo_total = (float)(((fim - inicio) + 0.0) /CLOCKS_PER_SEC);
+    tempo_total = fim - inicio;
     printf("Resultado final: %lf\n", resultado_final);
     printf("Tempo: %f\n", tempo_total);
 
