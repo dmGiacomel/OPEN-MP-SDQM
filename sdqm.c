@@ -137,8 +137,9 @@ int main (int argc, char **argv){
     fim = omp_get_wtime();
 
     tempo_total = fim - inicio;
-    printf("Resultado final: %lf\n", resultado_final);
-    printf("Tempo: %f\n", tempo_total);
+    //printf("%lf\n", resultado_final);
+    printf("%f\n", tempo_total);
+    printf("\n");
 
     return 0;
 }
